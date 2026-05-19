@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Create — Content Machine{% endblock %}
+{% block styles %}
+<style>
+    .platform-tabs { display:flex; gap:var(--sp2); margin-bottom:var(--sp5); }
+    .platform-tab { padding:var(--sp2) var(--sp4); border-radius:var(--r2); cursor:pointer; font-size:13px; font-weight:600; border:1px solid var(--b1); background:var(--s2); transition:all .15s; }
+    .platform-tab.active { background:var(--ink); color:#fff; border-color:var(--ink); }
+    .preview-box { background:var(--s2); border:1px solid var(--b1); border-radius:var(--r3); padding:var(--sp5); min-height:200px; white-space:pre-wrap; font-size:14px; line-height:1.6; }
+    .image-preview { max-width:300px; border-radius:var(--r3); margin-top:var(--sp4); }
+    .publish-row { display:flex; gap:var(--sp3); margin-top:var(--sp5); }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom:var(--sp6);">Create Post</h2>
+
+<div class="grid-2">
+    <div>
+        <div class="card">
+            <div class="label">Topic</div>
+            <input id="topic" placeholder="What's the post about?">
+            <div class="label mt-4">Angle / Hook</div>
+            <input id="angle" placeholder="Specific angle or hook">
+            <div class="label mt-4">Format</div>
+            <select id="format">
+                <option value="post">Post</option>
+                <option value="carousel">Carousel</option>
+                <option value="story">Story</option>
+                <option value="reel">Reel Script</option>
+            </select>
+            <div class="label mt-4">Platform</div>
+            <div class="platform-tabs">
+                <div class="platform-tab active" data-platform="linkedin" onclick="selectPlatform(this)">LinkedIn</div>
+                <div class="platform-tab" data-platform="instagram" onclick="selectPlatform(this)">Instagram</div>
+                <div class="platform-tab" data-platform="facebook" onclick="selectPlatform(this)">Facebook</div>
+            </div>
+            <button class="btn btn-primary mt-4" onclick="generateCopy()">Generate Copy</button>
+            <span id="genStatus" class="text-sm text-muted" style="margin-left:var(--sp3);"></span>
+        </div>
+
+        <div class="card">
+            <div class="label">Image Prompt</div>
+            <textarea id="imagePrompt" rows="3" placeholder="Describe the image you want generated..."></textarea>
+            <button class="btn btn-secondary mt-4" onclick="generateImage()">Generate Image</button>
+            <span id="imgStatus" class="text-sm text-muted" style="margin-left:var(--sp3);"></span>
+            <div id="imagePreview"></div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <div class="label">Preview</div>
+            <div class="preview-box" id="preview">Generated copy will appear here...</div>
+            <textarea id="editCopy" class="mt-4 hidden" rows="8"></textarea>
+            <div class="mt-4">
+                <button class="btn btn-secondary" onclick="toggleEdit()">Edit</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="label">Publish</div>
+            <div class="publish-row">
+                <button class="btn btn-li" onclick="publish('linkedin')">LinkedIn</button>
+                <button class="btn btn-ig" onclick="publish('instagram')">Instagram</button>
+                <button class="btn btn-fb" onclick="publish('facebook')">Facebook</button>
+            </div>
+            <div id="publishStatus" class="mt-4 text-sm"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPlatform = 'linkedin';
+let currentCopy = '';
+let currentImageUrl = '';
+
+window.addEventListener('load', () => {
+    const saved = localStorage.getItem('selectedIdea');
+    if (saved) {
+        const idea = JSON.parse(saved);
+        document.getElementById('topic').value = idea.title || '';
+        document.getElementById('angle').value = idea.angle || '';
+        localStorage.removeItem('selectedIdea');
+    }
+});
+
+function selectPlatform(el) {
+    document.querySelectorAll('.platform-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    currentPlatform = el.dataset.platform;
+}
+
+async function generateCopy() {
+    const topic = document.getElementById('topic').value.trim();
+    if (!topic) return;
+    const status = document.getElementById('genStatus');
+    status.innerHTML = '<span class="spinner"></span> Generating...';
+
+    try {
+        const resp = await fetch('/api/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                topic,
+                angle: document.getElementById('angle').value,
+                format: document.getElementById('format').value,
+                platform: currentPlatform
+            })
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            currentCopy = data.copy;
+            document.getElementById('preview').textContent = currentCopy;
+            document.getElementById('editCopy').value = currentCopy;
+            status.textContent = '✓ Done';
+        } else {
+            status.textContent = 'Error';
+        }
+    } catch(e) {
+        status.textContent = e.message;
+    }
+}
+
+async function generateImage() {
+    const prompt = document.getElementById('imagePrompt').value.trim();
+    if (!prompt) return;
+    const status = document.getElementById('imgStatus');
+    status.innerHTML = '<span class="spinner"></span> Generating image...';
+
+    try {
+        const resp = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt})
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            currentImageUrl = data.url;
+            document.getElementById('imagePreview').innerHTML = `<img src="${data.url}" class="image-preview">`;
+            status.textContent = '✓ Uploaded';
+        } else {
+            status.textContent = data.error || 'Failed';
+        }
+    } catch(e) {
+        status.textContent = e.message;
+    }
+}
+
+function toggleEdit() {
+    const preview = document.getElementById('preview');
+    const edit = document.getElementById('editCopy');
+    if (edit.classList.contains('hidden')) {
+        edit.classList.remove('hidden');
+        preview.classList.add('hidden');
+    } else {
+        currentCopy = edit.value;
+        preview.textContent = currentCopy;
+        edit.classList.add('hidden');
+        preview.classList.remove('hidden');
+    }
+}
+
+async function publish(platform) {
+    if (!currentCopy) { alert('Generate copy first'); return; }
+    const status = document.getElementById('publishStatus');
+    status.innerHTML = `<span class="spinner"></span> Publishing to ${platform}...`;
+
+    try {
+        const resp = await fetch('/api/publish', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({platform, copy: currentCopy, image_url: currentImageUrl})
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            status.innerHTML = `<span class="badge badge-green">Published to ${platform}!</span>`;
+        } else {
+            status.innerHTML = `<span class="badge badge-red">${data.error}</span>`;
+        }
+    } catch(e) {
+        status.innerHTML = `<span class="badge badge-red">${e.message}</span>`;
+    }
+}
+</script>
+{% endblock %}

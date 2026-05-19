@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Research — Content Machine{% endblock %}
+{% block content %}
+<h2 style="margin-bottom:var(--sp6);">Competitor Research</h2>
+
+<div class="card">
+    <div class="grid-2">
+        <div>
+            <div class="label">Platform</div>
+            <select id="platform">
+                <option value="instagram">Instagram</option>
+                <option value="linkedin">LinkedIn</option>
+            </select>
+        </div>
+        <div>
+            <div class="label">Handle / URL</div>
+            <input id="handle" placeholder="username or LinkedIn company URL">
+        </div>
+    </div>
+    <div class="mt-4">
+        <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeCompetitor()">Analyze</button>
+        <span id="analyzeStatus" class="text-sm text-muted" style="margin-left:var(--sp4);"></span>
+    </div>
+</div>
+
+<div id="results" class="hidden">
+    <div class="card">
+        <h3 style="margin-bottom:var(--sp4);">Top Performing Posts</h3>
+        <div id="outliers"></div>
+    </div>
+    <div class="card">
+        <h3 style="margin-bottom:var(--sp4);">Content Ideas</h3>
+        <div id="ideas"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function analyzeCompetitor() {
+    const platform = document.getElementById('platform').value;
+    const handle = document.getElementById('handle').value.trim();
+    if (!handle) return;
+
+    const btn = document.getElementById('analyzeBtn');
+    const status = document.getElementById('analyzeStatus');
+    btn.disabled = true;
+    status.innerHTML = '<span class="spinner"></span> Scraping & analyzing (30-60s)...';
+
+    try {
+        const resp = await fetch('/api/analyze-competitor', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({platform, handle})
+        });
+        const data = await resp.json();
+        if (!resp.ok) { status.textContent = data.error || 'Failed'; btn.disabled = false; return; }
+
+        document.getElementById('results').classList.remove('hidden');
+        renderOutliers(data.analysis.outliers || []);
+        renderIdeas(data.analysis.content_ideas || []);
+        status.textContent = `Found ${data.posts.length} posts`;
+    } catch(e) {
+        status.textContent = 'Error: ' + e.message;
+    }
+    btn.disabled = false;
+}
+
+function renderOutliers(outliers) {
+    const el = document.getElementById('outliers');
+    el.innerHTML = outliers.map(o => `
+        <div style="padding:var(--sp4);border-bottom:1px solid var(--b1);">
+            <p style="font-weight:500;">${o.caption || o.text || o.title || ''}</p>
+            <p class="text-sm text-muted mt-4">${o.why_it_worked || o.reason || ''}</p>
+            <div class="mt-4"><span class="badge badge-green">${o.likes || 0} likes</span></div>
+        </div>
+    `).join('');
+}
+
+function renderIdeas(ideas) {
+    const el = document.getElementById('ideas');
+    el.innerHTML = ideas.map(idea => `
+        <div style="padding:var(--sp4);border-bottom:1px solid var(--b1);">
+            <p style="font-weight:600;">${idea.title}</p>
+            <p class="text-sm" style="color:var(--t2);">${idea.angle || ''}</p>
+            <div class="mt-4">
+                <span class="badge badge-green">${idea.recommended_format || 'post'}</span>
+                ${(idea.hashtags||[]).map(h => `<span class="text-sm text-muted" style="margin-left:4px;">${h}</span>`).join('')}
+            </div>
+            <button class="btn btn-secondary mt-4" onclick="useIdea(${JSON.stringify(idea).replace(/"/g,'&quot;')})">Use This →</button>
+        </div>
+    `).join('');
+}
+
+function useIdea(idea) {
+    localStorage.setItem('selectedIdea', JSON.stringify(idea));
+    window.location.href = '/create';
+}
+</script>
+{% endblock %}

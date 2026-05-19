@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Content Machine{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --canvas: #f4f6f9; --s1: #fff; --s2: #f8f9fb;
+            --b1: rgba(0,0,0,0.07); --b2: rgba(0,0,0,0.12);
+            --t1: #0f172a; --t2: #475569; --t3: #94a3b8;
+            --ink: #4f46e5; --ink-10: rgba(79,70,229,0.08); --ink-dk: #3730a3;
+            --green: #059669; --red: #dc2626;
+            --li-blue: #0a66c2; --ig-pink: #e4405f; --fb-blue: #1877f2;
+            --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+            --sp1:4px; --sp2:8px; --sp3:12px; --sp4:16px; --sp5:20px; --sp6:24px; --sp8:32px;
+            --r2:6px; --r3:8px; --r4:12px;
+            --sw: 244px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: var(--font); background: var(--canvas); color: var(--t1); min-height: 100vh; }
+        .sidebar { position:fixed; left:0; top:0; width:var(--sw); height:100vh; background:var(--s1); border-right:1px solid var(--b1); padding:var(--sp6); display:flex; flex-direction:column; gap:var(--sp2); }
+        .sidebar h1 { font-size:16px; font-weight:800; margin-bottom:var(--sp4); color:var(--ink); }
+        .sidebar a { display:block; padding:var(--sp3) var(--sp4); border-radius:var(--r3); text-decoration:none; color:var(--t2); font-weight:500; font-size:14px; transition:all .15s; }
+        .sidebar a:hover, .sidebar a.active { background:var(--ink-10); color:var(--ink); }
+        .main { margin-left:var(--sw); padding:var(--sp8); max-width:1200px; }
+        .card { background:var(--s1); border:1px solid var(--b1); border-radius:var(--r4); padding:var(--sp6); margin-bottom:var(--sp5); }
+        .btn { display:inline-flex; align-items:center; gap:var(--sp2); padding:var(--sp3) var(--sp5); border-radius:var(--r3); border:none; font-family:var(--font); font-weight:600; font-size:13px; cursor:pointer; transition:all .15s; }
+        .btn-primary { background:var(--ink); color:#fff; }
+        .btn-primary:hover { background:var(--ink-dk); }
+        .btn-secondary { background:var(--s2); color:var(--t1); border:1px solid var(--b1); }
+        .btn-secondary:hover { border-color:var(--b2); }
+        .btn-ig { background:var(--ig-pink); color:#fff; }
+        .btn-li { background:var(--li-blue); color:#fff; }
+        .btn-fb { background:var(--fb-blue); color:#fff; }
+        input, select, textarea { font-family:var(--font); font-size:14px; padding:var(--sp3) var(--sp4); border:1px solid var(--b1); border-radius:var(--r3); width:100%; outline:none; transition:border-color .15s; }
+        input:focus, select:focus, textarea:focus { border-color:var(--ink); }
+        textarea { resize:vertical; min-height:120px; }
+        .label { font-size:12px; font-weight:600; color:var(--t2); margin-bottom:var(--sp1); text-transform:uppercase; letter-spacing:0.5px; }
+        .badge { display:inline-block; padding:2px 8px; border-radius:var(--r2); font-size:11px; font-weight:600; }
+        .badge-green { background:#ecfdf5; color:var(--green); }
+        .badge-red { background:#fef2f2; color:var(--red); }
+        .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--b1); border-top-color:var(--ink); border-radius:50%; animation:spin .6s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:var(--sp5); }
+        .mt-4 { margin-top:var(--sp4); }
+        .mt-6 { margin-top:var(--sp6); }
+        .mb-4 { margin-bottom:var(--sp4); }
+        .text-sm { font-size:13px; }
+        .text-muted { color:var(--t3); }
+        .hidden { display:none; }
+    </style>
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <nav class="sidebar">
+        <h1>Content Machine</h1>
+        <a href="/" class="{% if request.path == '/' %}active{% endif %}">Research</a>
+        <a href="/create" class="{% if request.path == '/create' %}active{% endif %}">Create</a>
+    </nav>
+    <main class="main">
+        {% block content %}{% endblock %}
+    </main>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

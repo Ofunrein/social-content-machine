@@ -1,0 +1,6 @@
+flask
+python-dotenv
+openai
+apify-client
+requests
+Pillow

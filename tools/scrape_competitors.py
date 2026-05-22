@@ -15,6 +15,9 @@ def scrape_instagram(handles):
             "addParentData": False,
         })
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+            # Skip error items returned by Apify (e.g. no_items, private account)
+            if item.get("error") or not item.get("username"):
+                continue
             all_posts.append({
                 "platform": "instagram",
                 "username": item.get("username", ""),

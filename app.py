@@ -40,6 +40,10 @@ def api_analyze_competitor():
     platform = (data.get("platform") or "instagram").strip()
     handle = (data.get("handle") or "").strip().lstrip("@")
 
+    # Extract username from full URLs e.g. https://www.instagram.com/chase.h.ai
+    if handle.startswith("http") or "/" in handle:
+        handle = handle.rstrip("/").split("/")[-1].lstrip("@")
+
     if not handle:
         return jsonify({"error": "Handle is required"}), 400
 
